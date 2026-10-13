@@ -128,7 +128,7 @@
 </section>
 </div>
 <script>
-const SB='https://ipcqlltatvpvrqceqiox.supabase.co',KEY='sb_publishable_2kintIrVZNiNCnimcl6hRg_FouPIW_7',AUTH_REDIRECT=location.origin+location.pathname;
+const SB='https://ipcqlltatvpvrqceqiox.supabase.co',KEY='sb_publishable_2kintIrVZNiNCnimcl6hRg_FouPIW_7',AUTH_REDIRECT='https://elevanegociomigra.com.br/',RECOVERY_SUCCESS='Se houver uma conta com esse e-mail, você receberá um link para criar uma nova senha. Confira também o Spam.';
 const $=id=>document.getElementById(id), today=()=>{let d=new Date(),p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}, ym=()=>today().slice(0,7), currencyLocale=c=>({BRL:'pt-BR',ARS:'es-AR',BOB:'es-BO',CLP:'es-CL',COP:'es-CO',USD:'es-EC',PYG:'es-PY',PEN:'es-PE'}[c]||'es'),brl=n=>{let c=taller?.moneda||'BRL';return Number(n||0).toLocaleString(currencyLocale(c),{style:'currency',currency:c})};
 const LANG_KEY='eleva_language';
 let currentLang=localStorage.getItem(LANG_KEY)||((navigator.language||'').toLowerCase().startsWith('es')?'es':'pt');
@@ -254,7 +254,20 @@ $('signupBtn').onclick=async()=>{let b=$('signupBtn'),email=normalizedEmail($('s
 /* The server-side duplicate handler is retained only in merge history; the validated handler above wins.
 $('signupBtn').onclick=async()=>{let b=$('signupBtn'),email=$('se').value.trim().toLowerCase(),pass=$('sp').value;if(!email||!email.includes('@'))return msg('Escribe un email válido');if(!strongPassword(pass))return msg('La contraseña necesita 10 caracteres, mayúscula, minúscula, número y símbolo.');if(pass!==$('sp2').value)return msg('Las contraseñas no coinciden');disable(b,true);try{let r=await fetch(SB+'/auth/v1/signup?redirect_to='+encodeURIComponent(AUTH_REDIRECT),{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email,password:pass})});let d=await r.json();if(!r.ok)throw new Error(d.msg||d.error_description||'No se pudo crear la cuenta');if(d.access_token){session=d;sessionStorage.setItem('eleva_session',JSON.stringify(d));await boot();return}if(d.user&&Array.isArray(d.user.identities)&&d.user.identities.length===0){$('signupBox').classList.add('hidden');$('loginBox').classList.remove('hidden');$('le').value=email;return msg('Este correo ya tiene una cuenta. Entra con tu contraseña o toca “Olvidé mi contraseña”.','err')}msg('Cuenta creada. Revisa tu email, confirma la cuenta y después entra. Mira también Spam o Correo no deseado.','ok');$('signupBox').classList.add('hidden');$('loginBox').classList.remove('hidden');$('le').value=email}catch(e){msg(authFriendly(e.message))}finally{disable(b,false)}};
 */
-$('forgotBtn').onclick=async()=>{let email=$('le').value.trim().toLowerCase();if(!email){await friendlyModal({title:'Recuperar contraseña',text:'Escribe tu email en el campo de acceso y vuelve a tocar “Olvidé mi contraseña”.',confirm:'Entendido'});return}try{let r=await fetch(SB+'/auth/v1/recover?redirect_to='+encodeURIComponent(AUTH_REDIRECT),{method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email})});let d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.msg||d.error_description||'No se pudo enviar recuperación');msg('Te enviamos el correo para crear una nueva contraseña. Mira también Spam o Correo no deseado.','ok')}catch(e){msg(authFriendly(e.message))}};
+$('forgotBtn').onclick=async()=>{const b=$('forgotBtn'),email=$('le').value.trim().toLowerCase();
+  if(b.disabled)return;
+  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254){msg('Informe um e-mail válido para recuperar seu acesso.');$('le').focus();return}
+  disable(b,true);
+  try{
+    const r=await fetch(SB+'/auth/v1/recover?redirect_to='+encodeURIComponent(AUTH_REDIRECT),{
+      method:'POST',headers:{apikey:KEY,'Content-Type':'application/json'},body:JSON.stringify({email})
+    });
+    if(r.status===429){msg('Muitas tentativas. Aguarde alguns minutos antes de tentar novamente.');return}
+    // Never disclose whether a given address is registered. Delivery is not guaranteed by HTTP acceptance.
+    msg(RECOVERY_SUCCESS,'ok');
+  }catch(e){msg('Não foi possível solicitar agora. Confira sua conexão e tente novamente.')}
+  finally{disable(b,false)}
+};
 $('repairAccessBtn').onclick=repairElevaAccess;
 $('repairConfirmBtn').onclick=repairElevaAccess;
 $('resetBtn').onclick=async()=>{let b=$('resetBtn'),pass=$('rp').value;if(!strongPassword(pass))return msg('La contraseña necesita 10 caracteres, mayúscula, minúscula, número y símbolo.');if(pass!==$('rp2').value)return msg('Las contraseñas no coinciden');disable(b,true);try{let r=await fetch(SB+'/auth/v1/user',{method:'PUT',headers:headers(),body:JSON.stringify({password:pass})}),d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.msg||d.message||d.error_description||'No se pudo cambiar la contraseña');try{await fetch(SB+'/auth/v1/logout',{method:'POST',headers:headers()})}catch{}sessionStorage.removeItem('eleva_session');session=null;history.replaceState({},document.title,AUTH_REDIRECT);$('resetBox').classList.add('hidden');$('loginBox').classList.remove('hidden');$('lp').value='';msg('Contraseña actualizada. Ya puedes entrar con la nueva contraseña.','ok')}catch(e){msg(authFriendly(e.message))}finally{disable(b,false)}};
