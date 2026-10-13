@@ -256,7 +256,7 @@ $('signupBtn').onclick=async()=>{let b=$('signupBtn'),email=$('se').value.trim()
 */
 $('forgotBtn').onclick=async()=>{const b=$('forgotBtn'),email=$('le').value.trim().toLowerCase();
   if(b.disabled)return;
-  if(!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)||email.length>254){msg('Informe um e-mail válido para recuperar seu acesso.');$('le').focus();return}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||email.length>254){msg('Informe um e-mail válido para recuperar seu acesso.');$('le').focus();return}
   disable(b,true);
   try{
     const r=await fetch(SB+'/auth/v1/recover?redirect_to='+encodeURIComponent(AUTH_REDIRECT),{
